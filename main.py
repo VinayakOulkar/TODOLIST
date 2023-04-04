@@ -2,8 +2,10 @@ import mysql.connector
 
 
 #CRUD Operations
-def CRUD(uname,password):
-
+def CRUD(result):
+    user_id=result[0][0]
+    uname=result[0][1]
+    password=result[0][2]
     while(True):
         choice=int(input("Following Are the Operations :\n1.Your Todo list\n2.Add a Todo list\n3.Update Todo List\n4.Delete your Todo List\n5.Exit\nSelect Your Choice:"))
 
@@ -33,12 +35,13 @@ def CRUD(uname,password):
         elif(choice==3):#Update Statement
 
             td_id=int(input("Enter Todo_Id Number that to be Updated:"))
-            upList=input("Enter the New Todo List:")
+
             mydb = mysql.connector.connect(host="localhost", user="root", passwd="12345678", database="todo_db")
             mycursor = mydb.cursor()
-            mycursor.execute("SELECT * FROM todolist where todo_id='{}';".format(td_id))
+            mycursor.execute("SELECT * FROM todolist where todo_id={} AND user_id={};".format(td_id,user_id));
             result=mycursor.fetchall()
             if(mycursor.rowcount>0):
+                upList = input("Enter the New Todo List:")
                 mycursor.execute("UPDATE todolist set todovalue='{}' where todo_id={};".format(upList,td_id))
                 mydb.commit()
             else:
@@ -48,18 +51,20 @@ def CRUD(uname,password):
             del_list=int(input("Enter Todo_Id to Delete your Existing List:"))
             mydb = mysql.connector.connect(host="localhost", user="root", passwd="12345678", database="todo_db")
             mycursor = mydb.cursor()
-            mycursor.execute("SELECT * FROM todolist where todo_id='{}';".format(del_list))
+            mycursor.execute("SELECT * FROM todolist where todo_id={} AND user_id={};".format(del_list,user_id))
             result = mycursor.fetchall()
+            # print("UserID",user_id,"\nResult",result)
             if (mycursor.rowcount > 0):
+                # print(result[0][1])
                 mycursor.execute("DELETE FROM todolist where todo_id='{}';".format(del_list))
                 mydb.commit()
                 print("-----List Deleted------")
             else:
-                print("No List Exist with Enter Todo_List value")
+                print("No List Exist with Entered Todo_List value")
 
         elif(choice==5):#Exit
             print("------------Program Terminated-------------")
-            mydb.close()
+
             exit()
         else:
             print("Invalid Choice")
@@ -84,7 +89,7 @@ def checkCredentials():
     mydb = mysql.connector.connect(host="localhost", user="root", passwd="12345678", database="todo_db")
     mycursor = mydb.cursor()
     mycursor.execute("Select * from usertable where username='{}'".format(uname))
-    result = mycursor.fetchall()
+    user_info = mycursor.fetchall()
     # print(mycursor.rowcount)
     if(mycursor.rowcount!=0):
         password = input("Enter Your Password:")
@@ -92,7 +97,7 @@ def checkCredentials():
         result=mycursor.fetchall()
 
         if(result[0][0]==password):
-            CRUD(uname, password)
+            CRUD(user_info)
         else:
             print("-------Wrong Password------")
 
@@ -122,9 +127,31 @@ def register():
             else:
                     password = input("Enter a Password consisting of Alphabet and Numbers:")
                     # Add uname and pass to user database
-                    mycursor.execute("insert into usertable(username,password) value('{}','{}')".format(uname,password))
+
+                    # print(pass_check,"----",password[0].isalpha())
+                    digit=0
+                    alpha=0
+                    for i in password:
+                        if(i.isdigit()):
+                            digit=1
+                        elif(i.isalpha()):
+                            alpha=1
+
+                    if not(digit==1 and alpha==1):
+                        print("Invalid Password")
+                        exit()
+                    mycursor.execute("insert into usertable(username,password) value('{}','{}')".format(uname, password))
                     mydb.commit()
-                    checkUP()
+                    mydb = mysql.connector.connect(host="localhost", user="root", passwd="12345678", database="todo_db")
+                    mycursor = mydb.cursor()
+                    mycursor.execute("Select * from usertable where username='{}'".format(uname))
+                    result = mycursor.fetchall()
+                    CRUD(result)
+
+
+
+
+
         else:
             print("-------Program Terminated---------")
             exit()
